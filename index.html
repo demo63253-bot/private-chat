@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+</head>
+<body class="bg-gray-900 text-white h-screen flex flex-col">
+    <div class="p-4 border-b border-gray-800 flex justify-between">
+        <h1 class="font-bold text-xl">✨ Private Chat</h1>
+        <span id="status" class="text-green-500 text-sm">● Online</span>
+    </div>
+
+    <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
+        </div>
+
+    <div class="p-4 bg-gray-800">
+        <div class="flex gap-2">
+            <input id="msg-input" type="text" placeholder="Type a message..." class="flex-1 bg-gray-700 rounded-full px-4 py-2 outline-none">
+            <button id="send-btn" class="bg-blue-600 px-6 py-2 rounded-full font-bold">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const roomId = "our-secret-key-123"; // You and your friend use the same ID
+        socket.emit('join-room', roomId);
+
+        const chatBox = document.getElementById('chat-box');
+        const input = document.getElementById('msg-input');
+        const btn = document.getElementById('send-btn');
+
+        function addMessage(data, isMe) {
+            const div = document.createElement('div');
+            div.className = isMe ? "self-end bg-blue-600 p-3 rounded-2xl max-w-[80%]" : "self-start bg-gray-700 p-3 rounded-2xl max-w-[80%]";
+            div.innerText = data.message;
+            
+            // Basic animation trigger
+            div.style.opacity = 0;
+            div.style.transform = "translateY(10px)";
+            chatBox.appendChild(div);
+            
+            setTimeout(() => {
+                div.style.transition = "all 0.3s ease";
+                div.style.opacity = 1;
+                div.style.transform = "translateY(0)";
+            }, 10);
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        btn.onclick = () => {
+            if(input.value) {
+                const data = { roomId, message: input.value, sender: 'Me' };
+                socket.emit('private-message', data);
+                addMessage(data, true);
+                input.value = '';
+            }
+        };
+
+        socket.on('receive-message', (data) => {
+            if(data.sender !== 'Me') addMessage(data, false);
+        });
+    </script>
+</body>
+</html>
